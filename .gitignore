@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+release/
+
+# Electron builder output
+dist-electron/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+
+# Build secrets (per-client, never commit)
+src/main/license/buildSecrets.ts
+
+# SQLite databases (development data)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
