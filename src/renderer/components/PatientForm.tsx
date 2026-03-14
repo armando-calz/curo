@@ -142,7 +142,7 @@ export default function PatientForm({
         </button>
         <button type="submit" disabled={saving || !form.name.trim()} className="btn-primary disabled:opacity-50">
           <IconSave />
-          {saving ? 'Guardando...' : isNew ? 'Crear paciente' : 'Guardar cambios'}
+          {saving ? 'Guardando...' : isNew ? 'Registrar paciente' : 'Guardar cambios'}
         </button>
       </div>
     </form>

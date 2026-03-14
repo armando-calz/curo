@@ -48,7 +48,9 @@ function LicenseExpiryToast({ info }: { info: LicenseInfo | null }) {
     if (info.status === 'expiring_soon' && info.days_left !== null) {
       hasShownLicenseToast = true
       toast(
-        `Tu licencia vence en ${info.days_left} día${info.days_left === 1 ? '' : 's'}. Puedes renovarla desde Configuración.`,
+        info.days_left === 0
+          ? 'Tu licencia vence hoy. Puedes renovarla desde Configuración.'
+          : `Tu licencia vence en ${info.days_left} día${info.days_left === 1 ? '' : 's'}. Puedes renovarla desde Configuración.`,
         'error'
       )
     }

@@ -137,7 +137,8 @@ export function registerIpc(licenseManager: LicenseManager): void {
   ipcMain.handle('backup:clearPendingError', () => saveConfig({ lastAutoBackupError: null }))
 
   ipcMain.handle('app:quit', () => {
-    app.quit()
+    const win = getWindow()
+    if (win) win.close()
   })
   ipcMain.handle('app:getClientName', () => CLIENT_NAME)
 }

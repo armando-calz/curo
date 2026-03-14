@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, Menu, powerMonitor } from 'electron'
 import path from 'path'
 import { registerIpc } from './ipc'
 import { closeDb } from './db'
@@ -23,6 +23,39 @@ function getIconPath(): string {
 
 function getWindow(): BrowserWindow | null {
   return BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0] || null
+}
+
+// En Windows/Linux: quitar la barra de menú por completo.
+// En macOS: mantener un menú mínimo para que funcionen los atajos
+// del sistema (Cmd+C, Cmd+V, Cmd+Z, Cmd+Q, etc.).
+if (process.platform === 'darwin') {
+  const macMenu = Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'Editar',
+      submenu: [
+        { role: 'undo', label: 'Deshacer' },
+        { role: 'redo', label: 'Rehacer' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Cortar' },
+        { role: 'copy', label: 'Copiar' },
+        { role: 'paste', label: 'Pegar' },
+        { role: 'selectAll', label: 'Seleccionar todo' },
+      ],
+    },
+  ])
+  Menu.setApplicationMenu(macMenu)
+} else {
+  Menu.setApplicationMenu(null)
 }
 
 app.whenReady().then(() => {
@@ -56,51 +89,40 @@ app.whenReady().then(() => {
     },
     24 * 60 * 60 * 1000
   )
+
+  // Re-verificar también al despertar del sleep, por si el interval fue throttled
+  powerMonitor.on('resume', () => {
+    const win = getWindow()
+    if (!win) return
+    const info = licenseManager.check()
+    win.webContents.send('license:status', info)
+  })
 })
 
 app.on('window-all-closed', () => {
-  if (!backupDoneForQuit) {
-    backup.runBackupOnClose()
-    if (process.platform === 'darwin') writeLog('info', 'Aplicación cerrada')
-  }
-  if (process.platform !== 'darwin') app.quit()
+  // Siempre salir cuando se cierra la última ventana.
+  // Esta app no tiene caso de uso de "correr en segundo plano".
+  app.quit()
 })
 
 app.on('before-quit', (event) => {
-  if (licenseCheckTimer) clearInterval(licenseCheckTimer)
-  backup.stopPeriodicBackup()
-  if (forceQuit) {
+  // Si el backup ya fue procesado o ya estamos en modo forceQuit, proceder con limpieza.
+  if (forceQuit || backupDoneForQuit) {
+    if (licenseCheckTimer) clearInterval(licenseCheckTimer)
+    backup.stopPeriodicBackup()
     closeDb()
     return
   }
+
+  // Aún no se ha intentado el backup: prevenir el quit y delegar al win.on('close').
   event.preventDefault()
-  backupDoneForQuit = true
-  const result = backup.runBackupOnClose()
-  if (result.success) {
-    writeLog('info', 'Aplicación cerrada')
-    closeDb()
+  const win = getWindow()
+  if (win) {
+    win.close()
+  } else {
+    // No hay ventana abierta — proceder directamente sin backup.
     forceQuit = true
     app.quit()
-  } else {
-    const win = getWindow()
-    const opts = {
-      type: 'warning' as const,
-      title: 'No se pudo guardar el respaldo',
-      message: (result.error ?? 'No se pudo generar el respaldo automático.').replace(/\n/g, ' '),
-      detail: 'Puede permanecer para intentar un respaldo manual desde Configuración, o cerrar de todas formas.',
-      buttons: ['No, permanecer', 'Sí, cerrar'],
-      defaultId: 0,
-      cancelId: 0,
-    }
-    ;(win ? dialog.showMessageBox(win, opts) : dialog.showMessageBox(opts)).then(({ response }) => {
-      if (response === 1) {
-        writeLog('info', 'Aplicación cerrada')
-        forceQuit = true
-        app.quit()
-      } else {
-        backupDoneForQuit = false
-      }
-    })
   }
 })
 
@@ -117,6 +139,47 @@ function createWindow(licenseInfo: LicenseInfo): void {
     },
   })
 
+  // Interceptar el cierre de la ventana para intentar backup primero
+  win.on('close', (event) => {
+    // Único caso donde permitimos que la ventana cierre sin prevenir.
+    if (forceQuit) return
+
+    // Siempre prevenir primero — esto evita que la ventana se cierre
+    // mientras el diálogo de backup fallido está visible.
+    event.preventDefault()
+
+    // Si ya está en progreso el intento de backup, no volver a intentarlo.
+    if (backupDoneForQuit) return
+
+    backupDoneForQuit = true
+    const result = backup.runBackupOnClose()
+    
+    if (result.success) {
+      writeLog('info', 'Aplicación cerrada')
+      forceQuit = true
+      win.close()
+    } else {
+      const opts = {
+        type: 'warning' as const,
+        title: 'No se pudo guardar el respaldo',
+        message: (result.error ?? 'No se pudo generar el respaldo automático.').replace(/\n/g, ' '),
+        detail: 'Puede permanecer para intentar un respaldo manual desde Configuración, o cerrar de todas formas.',
+        buttons: ['No, permanecer', 'Sí, cerrar'],
+        defaultId: 0,
+        cancelId: 0,
+      }
+      dialog.showMessageBox(win, opts).then(({ response }) => {
+        if (response === 1) {
+          writeLog('info', 'Aplicación cerrada sin respaldo')
+          forceQuit = true
+          win.close()
+        } else {
+          backupDoneForQuit = false
+        }
+      })
+    }
+  })
+
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
@@ -130,7 +193,10 @@ function createWindow(licenseInfo: LicenseInfo): void {
 }
 
 app.on('activate', () => {
+  // En macOS, recrear la ventana cuando se hace clic en el ícono del dock
   if (BrowserWindow.getAllWindows().length === 0) {
+    backupDoneForQuit = false
+    forceQuit = false
     const lm = new LicenseManager(app.getPath('userData'))
     createWindow(lm.check())
   }

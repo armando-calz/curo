@@ -522,7 +522,10 @@ export default function Settings({ onBack, licenseInfo, onLicenseActivated }: Se
               <>Vigente hasta <strong>{licenseInfo.expires}</strong>.</>
             )}
             {licenseInfo.status === 'expiring_soon' && licenseInfo.expires && licenseInfo.days_left !== null && (
-              <>Vence el <strong>{licenseInfo.expires}</strong> ({licenseInfo.days_left} días restantes).</>
+              <>
+                Vence el <strong>{licenseInfo.expires}</strong>{' '}
+                ({licenseInfo.days_left === 0 ? 'vence hoy' : `${licenseInfo.days_left} días restantes`}).
+              </>
             )}
             {licenseInfo.status === 'expired' && 'La licencia ha vencido.'}
             {licenseInfo.status === 'unlicensed' && 'Sin licencia activa.'}
