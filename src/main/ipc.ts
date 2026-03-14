@@ -141,4 +141,5 @@ export function registerIpc(licenseManager: LicenseManager): void {
     if (win) win.close()
   })
   ipcMain.handle('app:getClientName', () => CLIENT_NAME)
+  ipcMain.handle('app:getVersion', () => app.getVersion())
 }

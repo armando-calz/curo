@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('curo', {
   app: {
     quit: () => ipcRenderer.invoke('app:quit'),
     getClientName: (): Promise<string> => ipcRenderer.invoke('app:getClientName'),
+    getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
   },
 
   backup: {

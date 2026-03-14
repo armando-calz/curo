@@ -9,7 +9,9 @@ interface Props {
 const GROUPS = [5, 5, 5, 5] // 4 grupos de 5 → 20 chars + 3 guiones
 
 function formatInput(raw: string): string {
-  const clean = raw.replace(/[^A-Za-z2-7]/gi, '').toUpperCase().slice(0, 20)
+  // Siempre limpiar y reformatear desde cero
+  const clean = raw.replace(/[^A-Z2-7]/gi, '').toUpperCase().slice(0, 20)
+
   const groups: string[] = []
   let i = 0
   for (const len of GROUPS) {
@@ -17,7 +19,17 @@ function formatInput(raw: string): string {
     groups.push(clean.slice(i, i + len))
     i += len
   }
-  return groups.join('-')
+  const formatted = groups.join('-')
+
+  // Si el usuario escribió un guión manualmente al final y está justo en un límite de grupo
+  // (cada 5 caracteres), preservar el guión trailing para que se vea reflejado
+  const rawEndsWithHyphen = raw.endsWith('-')
+  const atGroupBoundary = clean.length > 0 && clean.length < 20 && clean.length % 5 === 0
+  if (rawEndsWithHyphen && atGroupBoundary) {
+    return formatted + '-'
+  }
+
+  return formatted
 }
 
 export default function ActivationScreen({ onActivated, expired = false }: Props) {
