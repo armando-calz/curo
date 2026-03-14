@@ -16,7 +16,9 @@ export default function LicenseIndicator({ info, onClick }: Props) {
 
   const label =
     info.status === 'expiring_soon' && info.days_left !== null
-      ? `Licencia expira en ${info.days_left}d`
+      ? info.days_left === 0
+        ? 'Licencia expira hoy'
+        : `Licencia expira en ${info.days_left}d`
       : 'Licencia vencida'
 
   const colorClass =

@@ -92,10 +92,10 @@ export default function PatientList({
       .deactivate(id)
       .then(() => {
         setPatients((prev) => prev.filter((p) => p.id !== id))
-        toast(`"${name}" desactivado correctamente`)
+        toast(`"${name}" borrado correctamente`)
       })
       .catch(() => {
-        toast(`No se pudo desactivar a "${name}". Intenta de nuevo.`, 'error')
+        toast(`No se pudo borrar a "${name}". Intenta de nuevo.`, 'error')
       })
       .finally(() => setDeletingId(null))
   }

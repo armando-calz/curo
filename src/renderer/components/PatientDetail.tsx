@@ -88,7 +88,7 @@ export default function PatientDetail({
       .deactivate(id)
       .then(() => {
         setConsultations((prev) => prev.filter((c) => c.id !== id))
-        toast('Consulta desactivada')
+        toast('Consulta eliminada')
       })
       .finally(() => setDeletingConsultationId(null))
   }
@@ -294,7 +294,7 @@ export default function PatientDetail({
                         onClick={() => handleDeactivateConsultation(c.id)}
                         disabled={deletingConsultationId === c.id}
                         className="rounded-lg p-1.5 text-stone-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                        title="Desactivar consulta"
+                        title="Eliminar consulta"
                       >
                         <IconTrash />
                       </button>
