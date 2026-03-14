@@ -1,6 +1,6 @@
 /**
- * Script de desarrollo para generar claves de licencia.
- * Usa el mismo HMAC_SECRET y lógica que LicenseManager.
+ * Generador de claves de licencia (desarrollo y producción).
+ * Usa el mismo formato y lógica que LicenseManager en la app.
  *
  * Uso:
  *   node scripts/gen-dev-key.mjs [validity_days] [window_hours]
@@ -9,15 +9,29 @@
  *   node scripts/gen-dev-key.mjs           → 365 días, 24h ventana
  *   node scripts/gen-dev-key.mjs 730 2     → 2 años, 2h ventana
  *   node scripts/gen-dev-key.mjs 0 48      → permanente (0xFFFF), 48h ventana
+ *
+ * Secreto HMAC:
+ *   - Desarrollo (en repo): si no defines HMAC_SECRET_HEX se usa un secreto
+ *     de prueba. Para que las claves funcionen en tu build local, tu
+ *     buildSecrets.ts debe usar el mismo secreto (o define HMAC_SECRET_HEX).
+ *   - Producción / equipo portable: define la variable HMAC_SECRET_HEX con
+ *     el secreto del cliente (64 caracteres hex = 32 bytes). Ejemplo:
+ *     HMAC_SECRET_HEX=6c32a545cc9e8b3f... node scripts/gen-dev-key.mjs 365 24
+ *     En el equipo portable solo necesitas: Node.js instalado + este script
+ *     + el valor de HMAC_SECRET_HEX (guárdalo en un .env o script que no
+ *     subas a git).
  */
 
 import { createHmac } from 'crypto'
 
-// ── Debe coincidir exactamente con buildSecrets.ts ──────────────────────────
-const HMAC_SECRET = Buffer.from(
-  'dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0dev0',
-  'hex'
-)
+// Secreto: env (producción/portable) o dev por defecto (64 hex = 32 bytes)
+const DEV_SECRET_HEX = '6465763064657630646576306465763064657630646576306465763064657630' // "dev0"×8
+const hex = process.env.HMAC_SECRET_HEX || DEV_SECRET_HEX
+if (hex.length !== 64 || !/^[0-9a-fA-F]+$/.test(hex)) {
+  console.error('Error: HMAC_SECRET_HEX debe ser 64 caracteres hexadecimales (32 bytes).')
+  process.exit(1)
+}
+const HMAC_SECRET = Buffer.from(hex, 'hex')
 const EPOCH = new Date('2024-01-01T00:00:00Z')
 const PERMANENT_SENTINEL = 0xffff
 

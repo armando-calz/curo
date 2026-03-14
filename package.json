@@ -1,6 +1,6 @@
 {
   "name": "curo",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "App de escritorio para gestión de pacientes y consultas (uso interno doctor)",
   "main": "dist/main/main.js",
   "scripts": {

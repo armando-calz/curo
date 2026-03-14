@@ -175,6 +175,7 @@ export default function Settings({ onBack, licenseInfo, onLicenseActivated }: Se
   const [licenseKey, setLicenseKey] = useState('')
   const [licenseError, setLicenseError] = useState<string | null>(null)
   const [licenseLoading, setLicenseLoading] = useState(false)
+  const [appVersion, setAppVersion] = useState<string>('')
   const { toast } = useToast()
 
   const loadActivityLog = useCallback(() => {
@@ -191,6 +192,10 @@ export default function Settings({ onBack, licenseInfo, onLicenseActivated }: Se
 
   useEffect(() => {
     load()
+  }, [])
+
+  useEffect(() => {
+    window.curo.app.getVersion().then(setAppVersion)
   }, [])
 
   const handleSelectFolder = async () => {
@@ -325,14 +330,26 @@ export default function Settings({ onBack, licenseInfo, onLicenseActivated }: Se
   }
 
   const formatLicenseInput = (raw: string) => {
-    const clean = raw.replace(/[^A-Za-z2-7]/gi, '').toUpperCase().slice(0, 20)
+    // Siempre limpiar y reformatear desde cero
+    const clean = raw.replace(/[^A-Z2-7]/gi, '').toUpperCase().slice(0, 20)
+
     const groups: string[] = []
     let i = 0
     while (i < clean.length) {
       groups.push(clean.slice(i, i + 5))
       i += 5
     }
-    return groups.join('-')
+    const formatted = groups.join('-')
+
+    // Si el usuario escribió un guión manualmente al final y está justo en un límite de grupo
+    // (cada 5 caracteres), preservar el guión trailing para que se vea reflejado
+    const rawEndsWithHyphen = raw.endsWith('-')
+    const atGroupBoundary = clean.length > 0 && clean.length < 20 && clean.length % 5 === 0
+    if (rawEndsWithHyphen && atGroupBoundary) {
+      return formatted + '-'
+    }
+
+    return formatted
   }
 
   const handleLicenseActivate = async (e: React.FormEvent) => {
@@ -651,6 +668,10 @@ export default function Settings({ onBack, licenseInfo, onLicenseActivated }: Se
           </div>
         )}
       </section>
+
+      {appVersion && (
+        <p className="text-center text-xs text-stone-400">Versión {appVersion}</p>
+      )}
 
       {/* Panel de proveedor (oculto, activado con 5 clics en esquina inferior derecha) */}
       <ProviderPanel onRevoked={handleLicenseRevoked} />
