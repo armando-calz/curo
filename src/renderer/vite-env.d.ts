@@ -85,6 +85,9 @@ interface Window {
       onStatus: (cb: (info: LicenseInfo) => void) => () => void
       revoke: () => Promise<void>
     }
+    provider: {
+      unlock: (code: string) => Promise<boolean>
+    }
     patients: {
       list: (search?: string, sortBy?: 'name' | 'lastConsultation', order?: 'asc' | 'desc', page?: number) => Promise<PatientListResult>
       get: (id: number) => Promise<Patient | null>

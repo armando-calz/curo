@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('curo', {
     revoke: (): Promise<void> => ipcRenderer.invoke('license:revoke'),
   },
 
+  provider: {
+    unlock: (code: string): Promise<boolean> => ipcRenderer.invoke('provider:unlock', code),
+  },
+
   patients: {
     list: (search?: string, sortBy?: 'name' | 'lastConsultation', order?: 'asc' | 'desc', page?: number) =>
       ipcRenderer.invoke('patients:list', search, sortBy, order, page),

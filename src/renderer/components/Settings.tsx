@@ -3,7 +3,6 @@ import { IconArrowLeft, IconFolder, IconDownload, IconUpload, IconUndo, IconHist
 import { useToast } from './Toast'
 
 const ACTIVITY_LOG_LIMIT = 80
-const PROVIDER_PASSWORD = 'REMOVED_PROVIDER_PASSWORD'
 
 // ── InfoTooltip ──────────────────────────────────────────────────────────────
 function InfoTooltip({ text }: { text: string }) {
@@ -46,7 +45,8 @@ function InfoTooltip({ text }: { text: string }) {
 // ── ProviderPanel ─────────────────────────────────────────────────────────────
 function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
   const [unlocked, setUnlocked] = useState(false)
-  const [password, setPassword] = useState('')
+  const [authorized, setAuthorized] = useState(false)
+  const [code, setCode] = useState('')
   const [error, setError] = useState(false)
   const { toast } = useToast()
 
@@ -56,14 +56,21 @@ function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
     return () => document.removeEventListener('provider:open', handler)
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const close = () => {
+    setUnlocked(false)
+    setAuthorized(false)
+    setCode('')
+    setError(false)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password === PROVIDER_PASSWORD) {
+    if (await window.curo.provider.unlock(code)) {
       setError(false)
-      setUnlocked(true)
+      setAuthorized(true)
     } else {
       setError(true)
-      setPassword('')
+      setCode('')
     }
   }
 
@@ -71,7 +78,7 @@ function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
     if (!window.confirm('¿Revocar la licencia? El usuario perderá acceso y deberá activar una nueva clave.')) return
     await window.curo.license.revoke()
     toast('Licencia revocada')
-    setUnlocked(false)
+    close()
     // Delay para que el toast sea visible antes de que el ToastProvider se desmonte
     setTimeout(() => onRevoked(), 1500)
   }
@@ -83,15 +90,15 @@ function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
       {unlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="w-full max-w-xs rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
-            {password !== PROVIDER_PASSWORD ? (
+            {!authorized ? (
               <>
                 <h4 className="mb-4 text-center text-sm font-semibold text-stone-700">Acceso proveedor</h4>
                 <form onSubmit={handleSubmit} className="space-y-3">
                   <input
                     type="password"
-                    value={password}
-                    onChange={(e) => { setError(false); setPassword(e.target.value) }}
-                    placeholder="Contraseña"
+                    value={code}
+                    onChange={(e) => { setError(false); setCode(e.target.value) }}
+                    placeholder="Código de proveedor"
                     autoFocus
                     className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors ${
                       error
@@ -99,9 +106,9 @@ function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
                         : 'border-stone-200 bg-stone-50 focus:border-brand-400 focus:ring-2 focus:ring-brand-100'
                     }`}
                   />
-                  {error && <p className="text-xs text-red-600">Contraseña incorrecta.</p>}
+                  {error && <p className="text-xs text-red-600">Código incorrecto.</p>}
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setUnlocked(false)} className="btn-ghost flex-1 justify-center">
+                    <button type="button" onClick={close} className="btn-ghost flex-1 justify-center">
                       Cancelar
                     </button>
                     <button type="submit" className="btn-primary flex-1 justify-center">
@@ -124,7 +131,7 @@ function ProviderPanel({ onRevoked }: { onRevoked: () => void }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setUnlocked(false); setPassword('') }}
+                    onClick={close}
                     className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm text-stone-500 transition-colors hover:bg-stone-50"
                   >
                     Cerrar

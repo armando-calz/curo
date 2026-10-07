@@ -5,11 +5,18 @@ import { loadConfig, saveConfig, BackupConfig } from './config'
 import * as backup from './backup'
 import * as activityLog from './activityLog'
 import { LicenseManager, LicenseError } from './license/LicenseManager'
-import { CLIENT_NAME } from './license/buildSecrets'
+import { CLIENT_NAME, HMAC_SECRET } from './license/buildSecrets'
+import { verifyProviderCode } from './license/providerCode'
 
 function getWindow(): BrowserWindow | null {
   return BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0] || null
 }
+
+// Tras introducir un código de proveedor válido, las acciones de proveedor quedan
+// habilitadas unos minutos. La verificación vive en el proceso principal: el renderer
+// no puede saltársela.
+const PROVIDER_SESSION_MS = 10 * 60_000
+let providerSessionUntil = 0
 
 export function registerIpc(licenseManager: LicenseManager): void {
   // License
@@ -22,8 +29,17 @@ export function registerIpc(licenseManager: LicenseManager): void {
       return { ok: false, error: message }
     }
   })
+  ipcMain.handle('provider:unlock', (_event, code: string) => {
+    const ok = typeof code === 'string' && verifyProviderCode(HMAC_SECRET, code)
+    providerSessionUntil = ok ? Date.now() + PROVIDER_SESSION_MS : 0
+    return ok
+  })
   ipcMain.handle('license:revoke', () => {
+    if (Date.now() > providerSessionUntil) {
+      throw new Error('Acceso de proveedor requerido.')
+    }
     licenseManager.revoke()
+    providerSessionUntil = 0
   })
 
   // Patients

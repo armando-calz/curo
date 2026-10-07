@@ -61,3 +61,15 @@ Ejemplos:
 - `node gen-dev-key.mjs 0 72` → licencia permanente, ventana 72 h  
 
 La clave se imprime en pantalla; el cliente la ingresa en la app en Configuración → licencia.
+
+## Código de acceso al Panel de proveedor
+
+El Panel de proveedor (doble clic en la versión, dentro de Configuración) ya no usa una contraseña fija. Pide un **código diario** derivado del mismo `HMAC_SECRET` del cliente:
+
+```bash
+HMAC_SECRET_HEX=SECRETO_HEX_64_CHARS node scripts/gen-provider-code.mjs
+```
+
+- Cambia cada día (UTC). La app acepta el de hoy y el de ayer, para tolerar zonas horarias.
+- Es distinto por cliente, porque cada build tiene su propio secreto.
+- Lo verifica el proceso principal de Electron. Tras un código válido, las acciones de proveedor (revocar licencia) quedan habilitadas 10 minutos.
