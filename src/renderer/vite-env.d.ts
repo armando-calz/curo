@@ -77,6 +77,7 @@ interface Window {
     app: {
       quit: () => Promise<void>
       getClientName: () => Promise<string>
+      getVersion: () => Promise<string>
     }
     license: {
       check: () => Promise<LicenseInfo>
