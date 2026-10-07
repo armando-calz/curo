@@ -9,7 +9,7 @@
     "build": "node scripts/build-app-icon.mjs && npm run build:main && vite build",
     "build:icon": "node scripts/build-app-icon.mjs",
     "build:main": "tsc -p tsconfig.main.json",
-    "dist:win": "npm run build && electron-builder --win --x64",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never && electron-rebuild -f -w better-sqlite3",
     "preview": "vite preview",
     "start": "electron ."
   },
