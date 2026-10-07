@@ -1,4 +1,9 @@
-name: Build Windows
+name: Build Windows (demo)
+
+# Builds the public DEMO installer: development license secret, fictitious clinic.
+# Client builds are made locally with the client's own buildSecrets.ts and delivered
+# privately — never here, because workflow artifacts of a public repo are downloadable
+# by any GitHub user.
 
 on:
   push:
@@ -11,6 +16,9 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout
@@ -25,30 +33,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Write build secrets
-        shell: bash
-        env:
-          BUILD_SECRETS: ${{ secrets.BUILD_SECRETS }}
-        run: echo "$BUILD_SECRETS" > src/main/license/buildSecrets.ts
+      - name: Use demo secrets
+        run: cp src/main/license/buildSecrets.demo.ts src/main/license/buildSecrets.ts
 
       - name: Build app + generate icons
         run: npm run build
 
-      - name: Package Windows installer
-        run: npx electron-builder --win --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Package demo installer
+        run: npx electron-builder --win --x64 --publish never -c.artifactName='Curo-Demo-Setup-${version}.${ext}'
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: curo-windows-installer
-          path: release/*.exe
+          name: curo-demo-windows-installer
+          path: release/Curo-Demo-Setup-*.exe
           retention-days: 30
 
       - name: Create GitHub Release (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.exe
+          files: release/Curo-Demo-Setup-*.exe
           generate_release_notes: true
