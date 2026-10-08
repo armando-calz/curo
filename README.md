@@ -1,5 +1,6 @@
 # Curo
 
+[![CI](https://github.com/armando-calz/curo/actions/workflows/ci.yml/badge.svg)](https://github.com/armando-calz/curo/actions/workflows/ci.yml)
 [![Build Windows (demo)](https://github.com/armando-calz/curo/actions/workflows/build-windows.yml/badge.svg)](https://github.com/armando-calz/curo/actions/workflows/build-windows.yml)
 
 Desktop app for doctors to manage patients and consultations, **offline and on their own computer**. It is used daily at a private medical practice in Mexico.
@@ -83,6 +84,11 @@ npm run dev
 ```
 
 Opens the Electron window with the UI served by Vite (`http://localhost:5173`).
+
+```bash
+npm test            # Vitest: license keys, expiry, renewals, tampering, provider codes
+npm run typecheck   # main process and renderer
+```
 
 ## Releases
 
