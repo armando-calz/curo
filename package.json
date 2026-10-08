@@ -11,7 +11,9 @@
     "build:main": "tsc -p tsconfig.main.json",
     "dist:win": "npm run build && electron-builder --win --x64 --publish never && electron-rebuild -f -w better-sqlite3",
     "preview": "vite preview",
-    "start": "electron ."
+    "start": "electron .",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "build": {
     "appId": "com.curo.app",
@@ -28,7 +30,12 @@
     "extraResources": [],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.ico"
     },
@@ -68,6 +75,7 @@
     "tailwindcss": "^3.4.15",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
+    "vitest": "^3.2.7",
     "wait-on": "^8.0.1"
   }
 }
